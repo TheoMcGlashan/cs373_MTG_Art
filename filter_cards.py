@@ -71,13 +71,16 @@ def filter_attributes(input_file, output_file):
         out_f.write('[\n')
         for item in ijson.items(f, 'item'):
             if isinstance(item, dict):
-                filtered_item = {k: v for k, v in item.items() if k in desired_attributes}
+                filtered_item = {}
+                for k, v in item.items():
+                    if k in desired_attributes:
+                        if k=='image_uris':
+                            v = v['art_crop']
+                            k = 'art_crop'
+                        filtered_item[k] = v
+
             else:
                 filtered_item = item
-
-            if "image_uris" in filtered_item.keys():
-                print(filtered_item.pop("image_uris"))
-            filtered_item['art_crop'] = filtered_item.pop("image_uris")['art_crop']
 
             if not first:
                 out_f.write(',\n')
