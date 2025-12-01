@@ -30,7 +30,7 @@ def convert_to_csv(input_file, output_file):
     first = True
     with open(input_file, 'r', encoding='utf-8') as f, \
         open(output_file, 'w', encoding='utf-8') as out_f:
-        out_f.write('name,mana_cost,type_line,oracle_text,colors,set_name,rarity,artist,power,toughness,cmc,keywords\n')
+        out_f.write('name,art_crop,cmc,type_line,colors,set_name,rarity\n')
         for item in ijson.items(f, 'item'):
             if not first:
                 out_f.write('\n')
@@ -38,21 +38,14 @@ def convert_to_csv(input_file, output_file):
 
             if isinstance(item, dict):
                 name = item.get('name', '').replace('"', '""')
-                mana_cost = item.get('mana_cost', '').replace('"', '""')
+                art_crop = item.get('art_crop', '').replace('"', '""')
+                cmc = item.get('cmc', '').replace('"', '""')
                 type_line = item.get('type_line', '').replace('"', '""')
-                oracle_text = item.get('oracle_text', '').replace('"', '""')
                 colors = ','.join(item.get('colors', []))
                 set_name = item.get('set_name', '').replace('"', '""')
                 rarity = item.get('rarity', '').replace('"', '""')
-                artist = item.get('artist', '').replace('"', '""')
-                power = item.get('power', '').replace('"', '""')
-                toughness = item.get('toughness', '').replace('"', '""')
-                cmc = str(item.get('cmc', '')).replace('"', '""')
-                keywords = ','.join(item.get('keywords', []))
 
-                oracle_text = oracle_text.replace('\n', ' ').replace('\r', ' ')
-
-                out_f.write(f'"{name}","{mana_cost}","{type_line}","{oracle_text}","{colors}","{set_name}","{rarity}","{artist}","{power}","{toughness}","{cmc}","{keywords}"')
+                out_f.write(f'"{name}","{art_crop}","{cmc}","{type_line}","{colors}","{set_name}","{rarity}"')
 
 def filter_attributes(input_file, output_file):
     desired_attributes = {
