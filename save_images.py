@@ -24,7 +24,7 @@ def move_images(X, y, cohort):
 def main():
     df = pd.read_csv("commander-cards-filtered.csv")
 
-    df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
+    #df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
 
     # Make directories 
     os.makedirs("R&M Images", exist_ok = True)
