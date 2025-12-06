@@ -74,8 +74,6 @@ def main():
         train_ds,
         epochs = 5,
         validation_data = val_ds,
-        #callbacks = callbacklist,
-        #class_weight = weights_to_use,
         verbose = 1
     )
 
