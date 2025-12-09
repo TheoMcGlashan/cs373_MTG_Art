@@ -20,10 +20,12 @@ def split_data(X, y):
 
 def main(): 
 
-    IMG_SIZE = (626, 457)
+    IMG_SIZE = (626, 457) #all (hopefully) mtg images are this size
     BATCH_SIZE = 32
-    CLASSES = ["rare", "mythic"]
-    INT_CLASSES = [0, 1]
+    CLASSES = ["common", "uncommon", "rare", "mythic"]
+    INT_CLASSES = [0, 1, 2, 3]
+    EPOCHS = 5
+
     df = pd.read_csv("commander-cards-filtered.csv")
 
     df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
@@ -72,7 +74,7 @@ def main():
     
     trainingHist = model.fit(
         train_ds,
-        epochs = 5,
+        epochs = EPOCHS,
         validation_data = val_ds,
         verbose = 1
     )
