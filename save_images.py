@@ -1,7 +1,7 @@
 import os 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm # this isnt necessary, just adds progress bars to for loops (for downloads)
+#from tqdm import tqdm # this isnt necessary, just adds progress bars to for loops (for downloads)
 import urllib.request
 
 #IMPORTANT: Make sure this split data function is the same when youre training a model
@@ -17,20 +17,22 @@ def split_data(X, y):
     return X_train, y_train, X_test, y_test, X_val, y_val
 
 # Copy images to assigned folders
-def move_images(X, y, cohort):
-    for i in tqdm(range(len(X))):
-        urllib.request.urlretrieve(X[i], os.path.join("R&M Images", cohort, str(y[i]) + '.png'))
+def move_images(X, y, cohort, root):
+    for i in range(len(X)): #tqdm(range(len(X))):
+        urllib.request.urlretrieve(X[i], os.path.join(root, cohort, str(y[i]) + '.png'))
 
 def main():
+    ROOT_DIR = "Images"
+
     df = pd.read_csv("commander-cards-filtered.csv")
 
     #df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
 
     # Make directories 
-    os.makedirs("R&M Images", exist_ok = True)
-    os.makedirs("R&M Images\Train", exist_ok = True)
-    os.makedirs("R&M Images\Test", exist_ok = True)
-    os.makedirs("R&M Images\Val", exist_ok = True)
+    os.makedirs(ROOT_DIR, exist_ok = True)
+    os.makedirs(ROOT_DIR + "/Train", exist_ok = True)
+    os.makedirs(ROOT_DIR + "/Test", exist_ok = True)
+    os.makedirs(ROOT_DIR + "/Val", exist_ok = True)
 
     #Assign data to cohorts
     X = df['art_crop'].values
@@ -39,9 +41,9 @@ def main():
     X_train, y_train, X_test, y_test, X_val, y_val = split_data(X,y)
 
     # Downloads images to their folder
-    move_images(X_train, y_train, 'Train')
-    move_images(X_test, y_test, 'Test')
-    move_images(X_val, y_val, 'Val')
+    move_images(X_train, y_train, 'Train', ROOT_DIR)
+    move_images(X_test, y_test, 'Test', ROOT_DIR)
+    move_images(X_val, y_val, 'Val', ROOT_DIR)
 
 if __name__ == "__main__":
     main()
