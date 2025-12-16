@@ -1,10 +1,34 @@
+import os
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
+# os.environ["TF_XLA_FLAGS"] = "--tf_xla_enable_xla_devices=false"
+# os.environ["TF_ENABLE_XLA"] = "0"  
+import tensorflow as tf
+#print(tf.__version__)
+# tf.config.optimizer.set_jit(False)
+#from tensorflow.keras.applications import EfficientNetB0
+#from tensorflow.keras.preprocessing import image_dataset_from_directory
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB0
-from tensorflow.keras.preprocessing import image_dataset_from_directory
 import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
+from sklearn.utils import class_weight
+import sys
+
+#BASH THESE TO CREATE CONDA ENVIRONMENT WITH CORRECT VERSIONS (if you want gpu (you want gpu))
+# conda create -n tf-gpu python=3.10 -y
+# conda activate tf-gpu
+# pip3 install tensorflow==2.15.*
+# conda install -c nvidia cuda-cudart=12.2 cuda-nvcc=12.2 cuda-nvrtc=12.2 -y
+# export CUDA_HOME=$CONDA_PREFIX
+# export XLA_FLAGS=--xla_gpu_cuda_data_dir=$CONDA_PREFIX
+# export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+# source ~/.bashrc
+# conda activate tf-gpu
+# pip3 install pandas
+# pip3 install scikit-learn
+# python3 -m pip install 'tensorflow[and-cuda]'
 
 #IMPORTANT: Make sure this split data function is the same when youre saving images
 # The only difference should be the y (target) value you select for and pass into split_data
@@ -20,15 +44,16 @@ def split_data(X, y):
 
 def main(): 
 
-    IMG_SIZE = (626, 457) #all (hopefully) mtg images are this size
-    BATCH_SIZE = 32
+
+    IMG_SIZE = (224,224) #resizes images
+    BATCH_SIZE = 64
     CLASSES = ["common", "uncommon", "rare", "mythic"]
     INT_CLASSES = [0, 1, 2, 3]
-    EPOCHS = 5
+    EPOCHS = 40
 
     df = pd.read_csv("commander-cards-filtered.csv")
 
-    df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
+    #df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
 
     #Assign data to cohorts
     X = df['name'].values
@@ -36,33 +61,52 @@ def main():
 
     X_train, y_train, X_test, y_test, X_val, y_val = split_data(X,y)
 
+    label_map = {"common": 0, "uncommon": 1,"rare": 2, "mythic": 3}
+    y_train_int = [label_map[x] for x in y_train.tolist()]
+    y_test_int = [label_map[x] for x in y_test.tolist()]
+    y_val_int = [label_map[x] for x in y_val.tolist()]
+
     #Make datasets 
-    train_ds = image_dataset_from_directory(
-        "R&M Images/Train",
+    train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        "All Images/Train",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
-        labels=y_train,
+        labels=y_train_int,
         label_mode='int')
 
-    test_ds = image_dataset_from_directory(
-        "R&M Images/Test",
+    test_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        "All Images/Test",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
-        labels=y_test,
+        labels=y_test_int,
         label_mode='int')
 
-    val_ds = image_dataset_from_directory(
-        "R&M Images/Val",
+    val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        "All Images/Val",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
-        labels=y_val,
+        labels=y_val_int,
         label_mode='int')
     
+    # class_weights = class_weight.compute_class_weight(
+    #     class_weight='balanced',
+    #     classes=np.unique(y_train_int),
+    #     y=y_train_int)
+    
+    # Convert to dict
+    # class_weights = {i: w for i, w in enumerate(class_weights)}
+    
     # Model
-    model = EfficientNetB0(weights="imagenet", include_top = True, input_shape = (IMG_SIZE, 3))
+    base_model = tf.keras.applications.EfficientNetB0(weights=None, include_top = False, input_shape = IMG_SIZE + (3,))
+
+    x = tf.keras.layers.GlobalAveragePooling2D()(base_model.output)
+    x = tf.keras.layers.Dropout(0.3)(x)  # regularization
+    output = tf.keras.layers.Dense(4, activation="softmax")(x)
+
+    model = tf.keras.Model(inputs=base_model.input, outputs=output)
 
     model.compile(loss = "sparse_categorical_crossentropy",
         optimizer = 'adam',
@@ -73,25 +117,28 @@ def main():
     # callbacklist.append(modelCheckpoint)
     
     trainingHist = model.fit(
-        train_ds,
-        epochs = EPOCHS,
-        validation_data = val_ds,
-        verbose = 1
-    )
+        train_ds, 
+        epochs = EPOCHS, 
+        validation_data = val_ds, 
+        verbose = 1, 
+        # class_weight = class_weights
+        )
 
     testSetPredictions = model.predict(test_ds)
 
-    threshold = 0.5
-    testSetPredictions = np.where(testSetPredictions > threshold, 1,0)
+    # threshold = 0.5
+    # testSetPredictions = np.where(testSetPredictions > threshold, 1,0)
 
-    testSetPredClasses = np.apply_along_axis(np.argmax, 1, testSetPredictions)
+    # testSetPredClasses = np.apply_along_axis(np.argmax, 1, testSetPredictions)
 
-    t_classReportV2 = classification_report(y_test, testSetPredClasses, target_names=CLASSES, output_dict = True)
+    testSetPredClasses = np.argmax(testSetPredictions, axis=1)
+
+    t_classReportV2 = classification_report(y_test_int, testSetPredClasses, target_names=CLASSES, output_dict = True)
     t_classReportDF = pd.DataFrame(t_classReportV2).transpose().round(2)
     t_classReportDF.to_html("testClassReport.html")
 
-    t_cm = confusion_matrix(y_test, testSetPredClasses, labels = INT_CLASSES)
-    t_cm = pd.DataFrame(t_cm, columns = ['Predicted MEL', 'Predicted Other'], index = ['Actual MEL', 'Actual Other'])
+    t_cm = confusion_matrix(y_test_int, testSetPredClasses, labels = INT_CLASSES)
+    t_cm = pd.DataFrame(t_cm, columns = ['Predicted common', 'Predicted uncommon', 'Predicted rare', 'Predicted mythic'], index = ['Actual common', 'Actual uncommon', 'Actual rare', 'Actual mythic'])
     t_cm.to_html("testConfusionMatrix.html")
 
 

@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 #from tqdm import tqdm # this isnt necessary, just adds progress bars to for loops (for downloads)
 import urllib.request
+import sys
 
 #IMPORTANT: Make sure this split data function is the same when youre training a model
 # The only difference should be the y (target) value you select for and pass into split_data
@@ -18,11 +19,14 @@ def split_data(X, y):
 
 # Copy images to assigned folders
 def move_images(X, y, cohort, root):
-    for i in range(len(X)): #tqdm(range(len(X))):
-        urllib.request.urlretrieve(X[i], os.path.join(root, cohort, str(y[i]) + '.png'))
+    for i in range(len(X)):#tqdm(range(len(X))):
+        try:
+            urllib.request.urlretrieve(X[i], os.path.join(root, cohort, str(y[i]) + '.png'))
+        except:
+            print("Could not download card:" + str(y[i]))
 
 def main():
-    ROOT_DIR = "Images"
+    ROOT_DIR = "All Images"
 
     df = pd.read_csv("commander-cards-filtered.csv")
 
