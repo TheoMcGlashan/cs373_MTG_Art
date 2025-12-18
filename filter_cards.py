@@ -20,11 +20,23 @@ def main():
         convert_to_csv(input_file, output_file)
     elif usage == "guilds_of_ravnica":
         guilds_of_ravnica(input_file, output_file)
+    elif usage == "change_colors":
+        print("function called")
+        change_colors(input_file, output_file)
+        print("done")
+    else:
+        sys.exit("didn't work")
 
 def guilds_of_ravnica(input_file, output_file):
     data = pandas.read_csv(input_file)
     data = data[data['set_name'] == 'Guilds of Ravnica']
     data.to_csv(output_file, index=False)
+
+def change_colors(input_file, output_file):
+    df = pandas.read_csv(input_file)
+    df.loc[df['colors'].astype(str) == "nan", 'colors'] = 'C'
+    df.loc[df['colors'].str.len() > 1, 'colors'] = 'M'
+    df.to_csv(output_file)
 
 def convert_to_csv(input_file, output_file):
     first = True

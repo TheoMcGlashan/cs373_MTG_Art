@@ -44,6 +44,14 @@ def split_data(X, y):
 
 def main(): 
 
+    args = sys.argv
+    if len(args) != 2:
+        sys.exit("only 2 arg: set name, parameter")
+    else:
+        # set_name = args[1]
+        set_name = "Return to Ravnica"
+        parameter = args[1]
+
 
     IMG_SIZE = (224,224) #resizes images
     BATCH_SIZE = 64
@@ -53,22 +61,35 @@ def main():
 
     df = pd.read_csv("commander-cards-filtered.csv")
 
+    df = df[df["set_name"] == set_name]
+
+
+
     #df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
 
     #Assign data to cohorts
     X = df['name'].values
-    y = df['rarity'].values
+    try:
+        y = df[parameter].values
+    except Exception:
+        sys.exit("parameter must be colors or rarity")
 
     X_train, y_train, X_test, y_test, X_val, y_val = split_data(X,y)
 
-    label_map = {"common": 0, "uncommon": 1,"rare": 2, "mythic": 3}
+    if parameter == "rarity":
+        label_map = {"common": 0, "uncommon": 1,"rare": 2, "mythic": 3}
+    elif parameter == "colors":
+        label_map = {"W": 0, "U": 1, "B": 2, "R": 3, "G": 4, "M": 5, "C": 6}
+
     y_train_int = [label_map[x] for x in y_train.tolist()]
     y_test_int = [label_map[x] for x in y_test.tolist()]
     y_val_int = [label_map[x] for x in y_val.tolist()]
 
+    FOLDER_NAME = set_name.replace(" ", "_")
+
     #Make datasets 
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        "All Images/Train",
+        FOLDER_NAME + "/Train",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -76,7 +97,7 @@ def main():
         label_mode='int')
 
     test_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        "All Images/Test",
+        FOLDER_NAME + "/Test",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -84,7 +105,7 @@ def main():
         label_mode='int')
 
     val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        "All Images/Val",
+        FOLDER_NAME + "/Val",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -104,7 +125,7 @@ def main():
 
     x = tf.keras.layers.GlobalAveragePooling2D()(base_model.output)
     x = tf.keras.layers.Dropout(0.3)(x)  # regularization
-    output = tf.keras.layers.Dense(4, activation="softmax")(x)
+    output = tf.keras.layers.Dense(7, activation="softmax")(x)
 
     model = tf.keras.Model(inputs=base_model.input, outputs=output)
 
@@ -140,10 +161,6 @@ def main():
     t_cm = confusion_matrix(y_test_int, testSetPredClasses, labels = INT_CLASSES)
     t_cm = pd.DataFrame(t_cm, columns = ['Predicted common', 'Predicted uncommon', 'Predicted rare', 'Predicted mythic'], index = ['Actual common', 'Actual uncommon', 'Actual rare', 'Actual mythic'])
     t_cm.to_html("testConfusionMatrix.html")
-
-
-
-
 
 
 
