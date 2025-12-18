@@ -55,8 +55,14 @@ def main():
 
     IMG_SIZE = (224,224) #resizes images
     BATCH_SIZE = 64
-    CLASSES = ["common", "uncommon", "rare", "mythic"]
-    INT_CLASSES = [0, 1, 2, 3]
+    if parameter == "colors":
+        CLASSES = ["W", "U", "B", "R", "G", "M", "C"]
+    elif parameter == "rarity":
+        CLASSES = ["common", "uncommon", "rare", "mythic"]
+    if parameter == "rarity":
+        INT_CLASSES = [0, 1, 2, 3]
+    elif parameter == "colors":
+        INT_CLASSES = [0, 1, 2, 3, 4, 5, 6]
     EPOCHS = 40
 
     df = pd.read_csv("commander-cards-filtered.csv")
@@ -125,7 +131,7 @@ def main():
 
     x = tf.keras.layers.GlobalAveragePooling2D()(base_model.output)
     x = tf.keras.layers.Dropout(0.3)(x)  # regularization
-    output = tf.keras.layers.Dense(7, activation="softmax")(x)
+    output = tf.keras.layers.Dense(len(CLASSES), activation="softmax")(x)
 
     model = tf.keras.Model(inputs=base_model.input, outputs=output)
 
