@@ -26,11 +26,11 @@ def move_images(X, y, cohort, root):
             print("Could not download card:" + str(y[i]))
 
 def main():
-    ROOT_DIR = "Return_to_Ravnica"
+    ROOT_DIR = "All_Images"
 
     df = pd.read_csv("commander-cards-filtered.csv")
 
-    df = df[(df['set_name'].isin(['Return to Ravnica']))] #selects only rare & mythic cards
+    # df = df[(df['set_name'].isin(['Return to Ravnica']))] #selects only rare & mythic cards
 
     # Make directories 
     os.makedirs(ROOT_DIR, exist_ok = True)

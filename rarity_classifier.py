@@ -48,8 +48,6 @@ def main():
     if len(args) != 2:
         sys.exit("only 2 arg: set name, parameter")
     else:
-        # set_name = args[1]
-        set_name = "Return to Ravnica"
         parameter = args[1]
 
 
@@ -66,9 +64,6 @@ def main():
     EPOCHS = 40
 
     df = pd.read_csv("commander-cards-filtered.csv")
-
-    df = df[df["set_name"] == set_name]
-
 
 
     #df = df[(df['rarity'].isin(['rare', 'mythic']))] #selects only rare & mythic cards
@@ -91,11 +86,10 @@ def main():
     y_test_int = [label_map[x] for x in y_test.tolist()]
     y_val_int = [label_map[x] for x in y_val.tolist()]
 
-    FOLDER_NAME = set_name.replace(" ", "_")
 
     #Make datasets 
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        FOLDER_NAME + "/Train",
+        "All_Images/Train",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -103,7 +97,7 @@ def main():
         label_mode='int')
 
     test_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        FOLDER_NAME + "/Test",
+        "All_Images/Test",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -111,7 +105,7 @@ def main():
         label_mode='int')
 
     val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        FOLDER_NAME + "/Val",
+        "All_Images/Val",
         seed=12345,
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
